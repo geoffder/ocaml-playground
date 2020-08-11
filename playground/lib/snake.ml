@@ -45,3 +45,11 @@ let map_rev ~f ss =
     | Tip -> new_snek
     | Snek (head, tail) -> f head @$ new_snek |> loop tail in
   loop ss Tip
+
+let rec fold ~init ~f = function
+  | Tip -> init
+  | Snek (head, tail) -> fold ~init:(f init head) ~f tail
+
+let pp_string ~stringer ss =
+  let f str a = str ^ stringer a ^ "; " in
+  "~~<" ^ (fold ~init:"" ~f ss) ^ ">~~"
