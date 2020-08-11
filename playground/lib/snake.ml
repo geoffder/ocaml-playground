@@ -56,4 +56,4 @@ let rec fold ~init ~f = function
 
 let pp_string ~stringer ss =
   let f str a = str ^ stringer a ^ "; " in
-  "~~<" ^ (fold ~init:"" ~f ss) ^ ">~~"
+  "~~<" ^ String.drop_suffix (fold ~init:"" ~f ss) 2 ^ ">~~"
