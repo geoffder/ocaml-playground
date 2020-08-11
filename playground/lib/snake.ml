@@ -57,3 +57,15 @@ let rec fold ~init ~f = function
 let pp_string ~stringer ss =
   let f str a = str ^ stringer a ^ "; " in
   "~~<" ^ String.drop_suffix (fold ~init:"" ~f ss) 2 ^ ">~~"
+
+module type Stringable = sig
+  type t
+  val to_string : t -> string
+end
+
+(* Same output as pp_string, but takes a module corresponding to the type held
+ * in the Snake as a source for the appropriate to_string function. First-class
+ * module use similar to how Base.Map gets the necessary comparators. *)
+let pp_string' (type a) (module M : Stringable with type t = a) (ss : a t) =
+  let f str ele = str ^ M.to_string ele ^ "; " in
+  "~~<" ^ String.drop_suffix (fold ~init:"" ~f ss) 2 ^ ">~~"
