@@ -7,7 +7,7 @@ let ruleset =
 
 let fizzer rules i =
   List.map ~f:(fun f -> f i) rules
-  |> List.fold_left ~init:None ~f:(Option.merge ~f:( ^ ))
+  |> List.fold ~init:None ~f:(Option.merge ~f:( ^ ))
   |> function | Some label -> label
               | None -> Int.to_string i
 
