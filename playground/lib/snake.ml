@@ -28,6 +28,10 @@ let rec of_list = function
   | [] -> Tip
   | h :: t -> h @$ of_list t
 
+let rec to_list = function
+  | Tip -> []
+  | Snek (head, tail) -> head :: to_list tail
+
 let rev ss =
   let rec loop old new_snek =
     match old with
