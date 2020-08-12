@@ -105,6 +105,33 @@ let get_at ~idx ss =
     | Snek (h, t) -> if i = idx then Some h else loop (i + 1) t in
   loop 0 ss
 
+(* First element where the predicate f is true. *)
+let rec find ~f = function
+  | Tip -> None
+  | Snek (h, t) -> if f h then Some h else find ~f t
+
+let rec contains ~ele = function
+  | Tip -> false
+  | Snek (h, t) -> if h = ele then true else contains ~ele t
+
+(* (Maybe) Position of first occurence of matching element. *)
+let idx_of ~ele ss =
+  let rec loop i = function
+    | Tip -> None
+    | Snek (h, t) -> if h = ele then Some i else loop (i + 1) t in
+  loop 0 ss
+
+(* Perform action f on each element. *)
+let rec iter ~f = function
+  | Tip -> ()
+  | Snek (head, tail) -> f head; iter ~f tail
+
+let filter ~f ss =
+  let rec loop acc = function
+    | Tip -> acc
+    | Snek (h, t) -> if f h then loop (h @$ acc) t else loop acc t in
+  loop Tip (rev ss)
+
 (* Last "; " is hackily dropped at the end for simplicity. *)
 let pp_string ~stringer ss =
   let f str a = str ^ stringer a ^ "; " in
