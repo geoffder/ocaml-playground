@@ -13,14 +13,14 @@ let ( >?= ) answer loop = answer >>= function
   | State s -> loop s
   | Stop    -> return ()
 
-let create ?(size=100) body initial_state : 'a t =
+let create ?(size=100) ~init body : 'a t =
   let (inbox, mailslot) = Pipe.create () in
   let () = Pipe.set_size_budget inbox size in
   let rec msg_loop state =
     Pipe.read inbox >>= function
     | `Eof -> return ()
     | `Ok msg -> return (body state msg) >?= msg_loop in
-  let () = msg_loop initial_state >>= (fun () -> return (Pipe.close mailslot))
+  let () = msg_loop init >>= (fun () -> return (Pipe.close mailslot))
            |> don't_wait_for in
   mailslot
 
@@ -63,7 +63,7 @@ module Test = struct
     | Fetch chan -> Pipe.write chan state |> don't_wait_for; State state
 
   let run () =
-    let mailbox = create body 0 in
+    let mailbox = create ~init:0 body in
     post mailbox (Add 1)  >>= fun () ->
     post mailbox (Add 1)  >>= fun () ->
     post mailbox Show     >>= fun () ->
