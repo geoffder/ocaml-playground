@@ -5,7 +5,8 @@ type 'a t      = 'a Pipe.Writer.t
 type 'a inbox  = 'a Pipe.Reader.t
 
 type 'b answer    = State of 'b | Async of 'b Deferred.t | Stop
-type ('b, 'a) body = 'b -> 'a -> 'b answer
+type ('b, 'a) msg_handler = 'b -> 'a -> 'b answer
+type ('a, 'b) body = 'a t -> ('b, 'a) msg_handler
 
 let read inbox  = Pipe.read inbox
 let post        = Pipe.write
@@ -23,10 +24,11 @@ let ( >?= ) answer loop =
 let create ?(size=100) ~init body =
   let (inbox, mailslot) = Pipe.create () in
   let () = Pipe.set_size_budget inbox size in
+  let handler = body mailslot in
   let rec msg_loop state =
     read inbox >>= function
     | `Eof    -> return ()
-    | `Ok msg -> body state msg >?= msg_loop in
+    | `Ok msg -> handler state msg >?= msg_loop in
   let () = upon (msg_loop init) (fun () -> close mailslot) in
   mailslot
 

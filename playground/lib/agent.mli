@@ -14,10 +14,15 @@ type 'a inbox  = 'a Pipe.Reader.t
  *  msg_loop. *)
 type 'b answer = State of 'b | Async of 'b Deferred.t | Stop
 
-(** Required signature of the message handling function given to an agent on
- *  creation. Takes current agent state, and message, returning an [answer]
- *  holding either the new state, or a [Stop] signal. *)
-type ('b, 'a) body = 'b -> 'a -> 'b answer
+(** Required signature of the message handling function (returned by applying [body]
+ *  to an [Agent.t]) on creation. Takes current agent state, and message,
+ *  returning an [answer] holding either the new state, or a [Stop] signal. *)
+type ('b, 'a) msg_handler = 'b -> 'a -> 'b answer
+
+(** Required signature of [body] argument to when [create]ing an agent. Takes
+ *  an [Agent.t], and returns a msg_loop that the mailslot (it's own) will be
+ *  available. *)
+type ('a, 'b) body = 'a t -> ('b, 'a) msg_handler
 
 (** Alias to Async.Pipe.read, but without optional [Async.Pipe.Consumer.t]. *)
 val read        : 'a inbox -> [ `Eof | `Ok of 'a ] Deferred.t
@@ -36,7 +41,7 @@ val close_inbox : 'a inbox -> unit
  *  ('b) as input, and returns the new state inside an ['b answer] or a signal to
  *  [Stop] the agent. Capacity of the agent [Async.Pipe.t] can be specified with
  *  [size].*)
-val create : ?size:int -> init:'b -> ('b, 'a) body -> 'a t
+val create : ?size:int -> init:'b -> ('a, 'b) body -> 'a t
 
 (** [post] a message to given agent, and do not wait for the result. Intended
  *  for use in [body] matches handling post_and_reply messages, where the channel
