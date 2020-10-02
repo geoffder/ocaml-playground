@@ -4,9 +4,9 @@ open Async
 type 'a t      = 'a Pipe.Writer.t
 type 'a inbox  = 'a Pipe.Reader.t
 
-type 'b answer    = State of 'b | Async of 'b Deferred.t | Stop
+type 'b answer           = State of 'b | Async of 'b Deferred.t | Stop
 type ('b, 'a) msg_handler = 'b -> 'a -> 'b answer
-type ('a, 'b) body = 'a t -> ('b, 'a) msg_handler
+type ('a, 'b) body        = 'a t -> ('b, 'a) msg_handler
 
 let read inbox  = Pipe.read inbox
 let post        = Pipe.write
