@@ -28,18 +28,20 @@ let create ?(size=100) ~init body : 'a t =
   let () = upon (msg_loop init) (fun () -> close mailslot) in
   mailslot
 
+let reply channel = post channel >> don't_wait_for
+
 let result_of_timeout = function
   | `Result a -> Result.return a
   | `Timeout  -> Result.fail "Timeout."
 
 let post_and_reply ?(timeout=86400.) t closure =
   let times_up = Time.Span.of_sec timeout |> with_timeout in
-  let (reply, channel) = Pipe.create () in
+  let (inbox, channel) = Pipe.create () in
   let msg = closure channel in
   post t msg >>= fun () ->
-  read reply |> times_up >>| result_of_timeout >>=? function
+  read inbox |> times_up >>| result_of_timeout >>=? function
   | `Eof  -> Deferred.Result.fail "Reply channel unexpectedly closed (`Eof)"
-  | `Ok r -> close_inbox reply; Deferred.Result.return r
+  | `Ok r -> close_inbox inbox; Deferred.Result.return r
 
 (* NOTE: Warning, shouldn't be using block_on_async within async code. *)
 let post_and_reply_sync t closure =
@@ -77,7 +79,7 @@ module Test = struct
         return (printf "(slow) state = %d\n" state)
       end |> don't_wait_for; State state
     | Stop  -> Stop
-    | Fetch chan -> post chan state |> don't_wait_for; State state
+    | Fetch chan -> reply chan state; State state
 
   let run () =
     let mailbox = create ~init:0 body in begin
