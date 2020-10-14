@@ -13,9 +13,10 @@ let time_thunk_n_times ~n f =
   Unix.gettimeofday () -. t
   |> Printf.printf "Execution time of %i repeats: %f seconds\n" n
 
+(* NOTE: "%!" is equivalent ot calling `Out_channel.flush stdout`. It does
+ * not take any additional arguments. *)
 let stdout_overwrite_example () =
   for i = 1 to 100 do
-    printf "\r%i" i;
-    Out_channel.flush stdout;
+    printf "\r%i%!" i;
     Unix.sleep 1
   done
