@@ -43,14 +43,6 @@ val close_inbox : 'a inbox -> unit
  *  [size].*)
 val create : ?size:int -> init:'b -> ('a, 'b) body -> 'a t
 
-(** Same as create, but uses [Async.In_thread.run] to start the message loop.
- ** According to the docs this shouldn't work out well, since Async is being
- ** used in the computation passed to [run]. Wanted to test out myself though.
- ** NOTE: From playing around with [Crunch] in the test module, seems like
- ** it's still blocking things up. I guess because it is still running stuff in
- ** the async context, rather than in a seperate thread I tried to send it to? *)
-val create_in_thread : ?size:int -> init:'b -> ('a, 'b) body -> 'a t
-
 (** [post] a message to given agent, and do not wait for the result. Intended
  *  for use in [body] matches handling post_and_reply messages, where the channel
  *  [Async.Pipe.Writer.t] is only written to once and subsequently closed. *)
