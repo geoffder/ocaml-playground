@@ -32,6 +32,29 @@ let create ?(size=100) ~init body =
   let () = upon (msg_loop init) (fun () -> close mailslot) in
   mailslot
 
+let create_in_thread ?(size=100) ~init body =
+  let (inbox, mailslot) = Pipe.create () in
+  let () = Pipe.set_size_budget inbox size in
+  let handler = body mailslot in
+  let rec msg_loop state =
+    read inbox >>= function
+    | `Eof    -> return ()
+    | `Ok msg -> handler state msg >?= msg_loop in
+  (* NOTE: Tried this (against docs recommendation), seemed to still block up the
+   * main thread with the heavy comp tried int the Crunch test module, so the thread
+   * was indeed not actually executing in parellel. Maybe because the message loop
+   * itself is in Async, using Pipe, which is obviously against the no Async
+   * rule in the docs. If I try again, do it with an agent body void of Async.
+   *
+   * Looks like Squeue is a thread-safe pipe that blocks until there is something
+   * available, thus I could build a message loop with it that does not require
+   * async. Can use In_thread.pipe_of_squeue to turn an Squeue.t to a
+   * Pipe.Reader.t, allowing async reply channels. Squeue.push (or never blocking
+   * alternatives) can be used to send messages in. *)
+  let () = upon
+      (Deferred.join (In_thread.run (fun () -> msg_loop init)))
+      (fun () -> close mailslot) in
+  mailslot
 let reply channel = post channel >> don't_wait_for
 
 let result_of_timeout = function

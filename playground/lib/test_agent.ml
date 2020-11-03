@@ -27,7 +27,7 @@ module Basics = struct
     | Fetch chan -> reply chan state; State state
 
   let run () =
-    let mailbox = create ~init:0 body in begin
+    let mailbox = create~init:0 body in begin
       post mailbox (Add 1)                          >>= fun () ->
       post mailbox (Add 1)                          >>= fun () ->
       post mailbox Show                             >>= fun () ->
@@ -76,6 +76,40 @@ module PingPong = struct
       post agent_a Kill                 >>= fun () ->
       post agent_b Kill                 >>= fun () ->
       after (Time.Span.of_sec 1.0)
+    end |> Fn.flip upon @@ (fun () -> Shutdown.shutdown 0);
+    never_returns (Scheduler.go ())
+end
+
+module Crunch = struct
+  type msg =
+    | AddSum of int list
+    | AddSumN of int * (int list)
+    | Show
+    | Fetch of int t
+    | Stop
+
+  let sum = List.fold ~init:0 ~f:( + )
+
+  let body _mailbox state = function
+    | AddSum l       -> State (state + sum l)
+    | AddSumN (n, l) -> State (Fn.apply_n_times ~n (fun s -> s + sum l) state)
+    | Show           -> printf "state = %d\n" state; State state
+    | Stop           -> Stop
+    | Fetch chan     -> reply chan state; State state
+
+  let run () =
+    let big_list = List.range 0 10000000 in
+    let mailbox = create_in_thread ~init:0 body in begin
+      return (print_endline "Pre print.")           >>= fun () ->
+      after (Time.Span.of_sec 1.0)                  >>= fun () ->
+      post mailbox (AddSumN (100, big_list))        >>= fun () ->
+      return (print_endline "Regular print.")       >>= fun () ->
+      post mailbox (AddSumN (100, big_list))        >>= fun () ->
+      post mailbox Show                             >>= fun () ->
+      post_and_reply_exn mailbox (fun c -> Fetch c)   >>= fun reply ->
+      return (printf "Fetched state = %i\n" reply)  >>= fun () ->
+      post mailbox Stop                             >>= fun () ->
+      after (Time.Span.of_sec 5.0)
     end |> Fn.flip upon @@ (fun () -> Shutdown.shutdown 0);
     never_returns (Scheduler.go ())
 end
