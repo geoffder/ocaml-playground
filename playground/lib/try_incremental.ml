@@ -44,4 +44,25 @@ let run () =
   push_fun l (( * ) 10);
   push_fun l (( * ) 5);
   Inc.stabilize ();
-  print_a ();
+  print_a ()
+
+let update_to_string to_string u =
+  let open Inc.Observer.Update in
+  match u with
+  | Initialized v    -> "initialized to " ^  to_string v
+  | Changed (v1, v2) -> "changed from " ^ to_string v1 ^ " to " ^ to_string v2
+  | Invalidated      -> "invalidated!"
+
+let print_update to_string u = print_endline (update_to_string to_string u)
+
+let run_with_updates () =
+  Inc.Observer.on_update_exn ~f:(print_update Int.to_string) a_o;
+  Inc.stabilize ();
+  push_fun l (( * ) 10);
+  Inc.stabilize ();
+  push_fun l (( * ) 5);
+  Inc.stabilize ();
+  push_fun l (( + ) 5);
+  push_fun l (( * ) 10);
+  push_fun l (( * ) 5);
+  Inc.stabilize ()
