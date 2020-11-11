@@ -24,7 +24,7 @@ module Basics = struct
         return (printf "(slow) state = %d\n" state)
       end |> don't_wait_for; State state
     | Stop  -> Stop
-    | Fetch chan -> reply chan state; State state
+    | Fetch chan -> Pipe.write chan state |> don't_wait_for; State state
 
   let run () =
     let mailbox = create~init:0 body in begin
@@ -58,10 +58,10 @@ module PingPong = struct
     | Kill
 
   let body mailslot name = function
-    | SendPing target -> reply target (Ping mailslot);                 State name
-    | Ping sender     -> reply sender (Pong name);                     State name
-    | Pong s          -> printf "%s: Pong recieved from %s!\n" name s; State name
-    | NameChange n    -> printf "%s's name is now %s.\n" name n;       State n
+    | SendPing target -> Pipe.write target (Ping mailslot) |> don't_wait_for; State name
+    | Ping sender     -> Pipe.write sender (Pong name) |> don't_wait_for;     State name
+    | Pong s          -> printf "%s: Pong recieved from %s!\n" name s;        State name
+    | NameChange n    -> printf "%s's name is now %s.\n" name n;              State n
     | Kill            -> Stop
 
   let run () =

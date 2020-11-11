@@ -43,11 +43,6 @@ val close_inbox : 'a inbox -> unit
  *  [size].*)
 val create : ?size:int -> init:'b -> ('a, 'b) body -> 'a t
 
-(** [post] a message to given agent, and do not wait for the result. Intended
- *  for use in [body] matches handling post_and_reply messages, where the channel
- *  [Async.Pipe.Writer.t] is only written to once and subsequently closed. *)
-val reply  : 'a t -> 'a -> unit
-
 (** [post_and_reply ?timeout t closure] [post]s a message created by applying
  *  the given [closure] to a [Async.Pipe.Writer.t] (for one-time use) to the
  *  given agent [t]. A reply is read from the [inbox] side of the pipe, and
