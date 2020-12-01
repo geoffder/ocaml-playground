@@ -1,5 +1,4 @@
 open Core
-
 module Incr : Incremental.S = Incremental.Make ()
 
 module MathStack = struct
@@ -17,7 +16,6 @@ module MathStack = struct
    * (cyclic dependency). *)
 
   let push_fun stack f = Incr.Var.replace ~f:(fun s -> f :: s) stack
-
   let l = Incr.Var.create []
   let v = ref 5
 
@@ -51,7 +49,7 @@ module MathStack = struct
   let update_to_string to_string u =
     let open Incr.Observer.Update in
     match u with
-    | Initialized v    -> "initialized to " ^  to_string v
+    | Initialized v    -> "initialized to " ^ to_string v
     | Changed (v1, v2) -> "changed from " ^ to_string v1 ^ " to " ^ to_string v2
     | Invalidated      -> "invalidated!"
 
@@ -72,7 +70,7 @@ module MathStack = struct
 end
 
 module MapDiffs = struct
-  module Incr_map = Incr_map.Make(Incr)
+  module Incr_map = Incr_map.Make (Incr)
 
   let m_v = Incr.Var.create (Map.empty (module Int))
   let m_t = Incr.Var.watch m_v
@@ -82,9 +80,9 @@ module MapDiffs = struct
     let seq = Map.to_sequence m in
     if Sequence.length seq = 0
     then "( empty )\n"
-    else
+    else (
       let f acc (k, v) = sprintf "%s%i => %s\n" acc k v in
-      Sequence.fold ~init:"" ~f seq
+      Sequence.fold ~init:"" ~f seq )
 
   let string_repr = Incr.map m_t ~f:(fun m -> "Map:\n" ^ map_to_string m)
   let string_repr_o = Incr.observe string_repr
@@ -113,7 +111,9 @@ module MapDiffs = struct
   let new_entries_obs update =
     let open Incr.Observer.Update in
     match update with
-    | Initialized m    -> print_endline "map initialized to..."; print_contents m
+    | Initialized m    ->
+      print_endline "map initialized to...";
+      print_contents m
     | Changed (m1, m2) -> print_diff (symm_diff m1 m2)
     | Invalidated      -> print_endline "invalidated!"
 
@@ -121,7 +121,8 @@ module MapDiffs = struct
     let open Incr.Update in
     match update with
     | Necessary m      ->
-      print_endline "necessary: map initialized to..."; print_contents m
+      print_endline "necessary: map initialized to...";
+      print_contents m
     | Unnecessary      -> print_endline "unecessary?"
     | Changed (m1, m2) -> print_diff (symm_diff m1 m2)
     | Invalidated      -> print_endline "invalidated!"
@@ -149,4 +150,21 @@ module MapDiffs = struct
   let run_repr () =
     Incr.Observer.on_update_exn ~f:updated_repr_obs string_repr_o;
     run ()
+end
+
+module Timing = struct
+  let new_clock () = Incr.Clock.create ~start:(Time_ns.now ()) ()
+  let just_a_sec s = Time_ns.add (Time_ns.now ()) (Time_ns.Span.of_sec s)
+
+  let timer clock secs =
+    List.range 0 secs
+    |> List.map ~f:(fun s -> just_a_sec (Float.of_int s), sprintf "just %i secs" s)
+    |> Incr.Clock.step_function clock ~init:"just a sec"
+
+  let timer_obs clock secs = timer clock secs |> Incr.observe
+
+  let stab_and_look clock obs =
+    Incr.Clock.advance_clock ~to_:(Time_ns.now ()) clock;
+    Incr.stabilize ();
+    Incr.Observer.value obs
 end
