@@ -1,2 +1,2 @@
 # ocaml-playground
-Exploratory learning of OCaml, and possibly snippets.
+Snippets and testing.
