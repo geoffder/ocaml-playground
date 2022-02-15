@@ -51,4 +51,17 @@ let glyph_outline ?weight ~font char =
 (* Should there be a global context that is just cleared out at every usage? Or
     a new one each time toplevel function that takes a whole string is used?
     Seem like it can be pretty cheap, so maybe just for each string (not just
-    char level like this, since usually you'll want word/phrase) *)
+    char level like this, since usually you'll want word/phrase)
+
+   For multiple characters:
+   - clear path and move redo the move operation that was at the end of the last
+    character
+   - thus the relative positions are preserved, while the clearing allows
+    unambiguous segregation of the outer/inner paths for each character
+   - initial move_to using text extents based on the alignment/anchoring
+    (centre) option given to the top-level function? (will likely require use of
+   text extent on the whole string to get the sizing)
+
+   Note that from the one check I did so far, the letter is upside down, so the
+    coordinate system is flipped at the least.
+*)
